@@ -20,7 +20,7 @@ The cool thing of this component is that you do not need to wait the end of
 the program to get back the output. it comes line by line.
 
 This is a source-only release of TurboPack DOSCommand. It includes
-designtime and runtime packages for Delphi C++Builder. It supports WIn32 and Win64.
+designtime and runtime packages for Delphi and C++Builder. It supports Win32 and Win64.
 
 ==============================================
 
