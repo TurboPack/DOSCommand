@@ -142,14 +142,11 @@ uses
 type
   EDosCommand = class(Exception); // MK: 20030613
 
-  ECreatePipeError = class(Exception);
-  // exception raised when a pipe cannot be created
-  ECreateProcessError = class(Exception);
-  // exception raised when the process cannot be created
+  ECreatePipeError = class(Exception); // exception raised when a pipe cannot be created
+  ECreateProcessError = class(Exception); // exception raised when the process cannot be created
   EProcessTimer = class(Exception); // exception raised by TProcessTimer
 
-  TOutputType = (otEntireLine, otBeginningOfLine);
-  // to know if the newline is finished.
+  TOutputType = (otEntireLine, otBeginningOfLine); // to know if the newline is finished.
   TEndStatus = (esStop, // stopped via TDoscommand.Stop
     esProcess, // ended via Child-Process
     esStill_Active, // still active
@@ -161,9 +158,8 @@ type
   // only needed if console in child process has unicode characters (UTF-8, UTF-16,...)
   // if these events are not implemented, TDosCommand treat console input and output as ANSI
   // these events are NOT running in mainthread!!!!
-  TCharDecoding = function(ASender: TObject; ABuf: TStream): string of object;
-  // convert input buf from console to string Result
-  TCharEncoding = procedure(ASender: TObject; const AChars: string; AOutBuf: TStream) of object;
+  TCharDecoding = function(ASender: TObject; ABuf: TStream): string of object; // convert input buf from console to string Result
+  TCharEncoding = procedure(ASender: TObject; const AChars: string; AOutBuf: TStream) of object; //convert input chars to outbuf-Stream
 
 type
   // sirius2: replaced inherited TTimer (not threadsafe) with direct call to WinAPI
@@ -224,6 +220,7 @@ type
     property Strings[AIndex: Integer]: string read get_Strings write set_Strings; default;
   end;
 
+  //by sirius; syncronized string (TReadPipe<->TDosThread)
   TSyncString = class(TSimpleRWSync)
   strict private
     FValue: string;
@@ -256,6 +253,7 @@ type
   TDosCommand = class;
 
   // sirius2: added EnvironmentStrings and (En/De)coding-events
+  // the thread that is waiting for outputs through the pipe
   TDosThread = class(TThread)
   strict private
     FCommandLine: string;
@@ -341,73 +339,34 @@ type
   strict protected
     function DoCharDecoding(ASender: TObject; ABuf: TStream): string; virtual;
     procedure DoCharEncoding(ASender: TObject; const AChars: string; AOutBuf: TStream); virtual;
-    { Déclarations protégées }
     procedure ThreadTerminated(ASender: TObject);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Execute; // the user call this to execute the command
-    // stops process and waits
-
-    procedure SendLine(AValue: string; AEol: Boolean);
-    procedure Stop; // the user can stop the process with this method
-    // priority of the process
-    // only for creatrprocess
-    property EndStatus: TEndStatus read FEndStatus;
-    // PRocessinformation from Createprocess
-
+    procedure SendLine(AValue: string; AEol: Boolean); // add a line in the input pipe
+    procedure Stop; // the user can stop the process with this method, stops process and waits
+    property EndStatus: TEndStatus read FEndStatus; // how the thread ended
     property ExitCode: Cardinal read FExitCode;
-    // add a line in the input pipe
-
-    property IsRunning: Boolean read get_IsRunning; // MK: 20030613
-    // can be lines of a memo, a richedit, a listbox, ...
-
-    property Lines: TStringList read FLines;
-    // When true, a command is still running
-
-    property OutputLines: TStrings read FOutputLines write set_OutputLines;
-    // if the user want to access all the outputs of a process, he can use this property
-    // lines is deleted before execution
-
-    property Priority: Integer read FPriority write FPriority;
-    // how the thread ended
-
-    property ProcessInformation: TProcessInformation read FProcessInformation;
+    property IsRunning: Boolean read get_IsRunning; // When true, a command is still running // MK: 20030613
+    property Lines: TStringList read FLines; // if the user want to access all the outputs of a process, he can use this property, lines is deleted before execution
+    property OutputLines: TStrings read FOutputLines write set_OutputLines; // can be lines of a memo, a richedit, a listbox, ...
+    property Priority: Integer read FPriority write FPriority; // stops process and waits, only for createprocess
+    property ProcessInformation: TProcessInformation read FProcessInformation; // Processinformation from createprocess
   published
-    // add Environment variables for process (if empty -> environment of parent process is used)
-
-    property CommandLine: string read FCommandLine write FCommandLine;
-    // command to execute
-
-    property CurrentDir: string read FCurrentDir write FCurrentDir; // by sirius
-    property Environment: TStrings read FEnvironment;
-    // event for the end of the process (normally, time out or by user (DosCommand.Stop;))
-
-    property InputToOutput: Boolean read FInputToOutput write FInputToOutput;
-    // Events to convert buf to (Unicode-)string and reverse !!not needed if console of child uses AnsiString!!
-    // this event is not threadsafe !!!! dont change during execution
-
+    property CommandLine: string read FCommandLine write FCommandLine; // command to execute
+    property CurrentDir: string read FCurrentDir write FCurrentDir; // currentdir for childprocess (if empty -> currentdir is same like currentdir in parent process), by sirius
+    property Environment: TStrings read FEnvironment; // add Environment variables for process (if empty -> environment of parent process is used)
+    property InputToOutput: Boolean read FInputToOutput write FInputToOutput; // check it if you want that the inputs appear also in the outputs
     property MaxTimeAfterBeginning: Integer read FMaxTimeAfterBeginning write FMaxTimeAfterBeginning;
     property MaxTimeAfterLastOutput: Integer read FMaxTimeAfterLastOutput write FMaxTimeAfterLastOutput;
-    // event to ask for processtermination
-
     property OnCharDecoding: TCharDecoding read FOnCharDecoding write set_CharDecoding;
-    property OnCharEncoding: TCharEncoding read FonCharEncoding write set_CharEncoding;
-    // check it if you want that the inputs appear also in the outputs
-
-    property OnExecuteError: TErrorEvent read FonExecuteError write FonExecuteError;
-    // event for each New line that is received through the pipe
-
-    property OnNewChar: TNewCharEvent read FOnNewChar write FOnNewChar;
-    // currentdir for childprocess (if empty -> currentdir is same like currentdir in parent process)
-
-    property OnNewLine: TNewLineEvent read FOnNewLine write FOnNewLine;
-    // event for each New char that is received through the pipe
-
-    property OnTerminated: TNotifyEvent read FOnTerminated write FOnTerminated;
-    // event if DosCommand.execute is aborted via Exception
-
-    property OnTerminateProcess: TTerminateProcessEvent read FOnTerminateProcess write FOnTerminateProcess;
+    property OnCharEncoding: TCharEncoding read FonCharEncoding write set_CharEncoding; // Events to convert buf to (Unicode-)string and reverse !!not needed if console of child uses AnsiString!! This event is not threadsafe !!!! dont change during execution
+    property OnExecuteError: TErrorEvent read FonExecuteError write FonExecuteError; // event if DosCommand.execute is aborted via Exception
+    property OnNewChar: TNewCharEvent read FOnNewChar write FOnNewChar; // event for each New char that is received through the pipe
+    property OnNewLine: TNewLineEvent read FOnNewLine write FOnNewLine; // event for each New line that is received through the pipe
+    property OnTerminated: TNotifyEvent read FOnTerminated write FOnTerminated; // event for the end of the process (normally, time out or by user (DosCommand.Stop;))
+    property OnTerminateProcess: TTerminateProcessEvent read FOnTerminateProcess write FOnTerminateProcess; // event to ask for processtermination
   end;
 
 implementation
