@@ -182,7 +182,7 @@ public:
 
 #pragma pack(pop)
 
-typedef void __fastcall (__closure *TNewLineEvent)(System::TObject* ASender, System::UnicodeString ANewLine, TOutputType AOutputType);
+typedef void __fastcall (__closure *TNewLineEvent)(System::TObject* ASender, const System::UnicodeString ANewLine, TOutputType AOutputType);
 
 typedef void __fastcall (__closure *TNewCharEvent)(System::TObject* ASender, System::WideChar ANewChar);
 
@@ -292,16 +292,9 @@ private:
 	void __fastcall DoEndStatus(TEndStatus AValue);
 	void __fastcall DoLinesAdd(const System::UnicodeString AStr);
 	void __fastcall DoNewChar(System::WideChar AChar);
-	void __fastcall DoNewLine(const System::UnicodeString AStr, TOutputType AOt);
-	void __fastcall DoReadLine(TSyncString* ReadString, System::UnicodeString &Str, System::UnicodeString &last, bool &LineBeginned);
+	void __fastcall DoNewLine(const System::UnicodeString AStr, TOutputType AOutputType);
+	void __fastcall DoReadLine(TSyncString* AReadString, System::UnicodeString &AStr, System::UnicodeString &ALast, bool &ALineBeginned);
 	void __fastcall DoSendLine(NativeUInt AWritePipe, System::UnicodeString &ALast, bool &ALineBeginned);
-	void __fastcall DoSyncLinesAdd(void);
-	void __fastcall DoSyncNewChar(void);
-	void __fastcall DoSyncNewLine(void);
-	void __fastcall DoSyncOutPutAdd(void);
-	void __fastcall DoSyncOutPutLastLine(void);
-	void __fastcall DoSyncProcessInformation(void);
-	void __fastcall DoSyncTerminateProcess(void);
 	void __fastcall DoTerminateProcess(void);
 	
 private:
@@ -309,12 +302,10 @@ private:
 	
 protected:
 	bool FCanTerminate;
-	TOutputType FSyncOutputType;
-	System::UnicodeString FSyncStr;
 	virtual void __fastcall Execute(void);
 	
 public:
-	__fastcall TDosThread(TDosCommand* AOwner, System::UnicodeString ACl, System::UnicodeString ACurrDir, System::Classes::TStringList* AL, System::Classes::TStrings* AOl, TProcessTimer* ATimer, int AMtab, int AMtalo, TNewLineEvent AOnl, TNewCharEvent AOnc, System::Classes::TNotifyEvent Ot, TTerminateProcessEvent AOtp, int Ap, bool Aito, System::Classes::TStrings* AEnv, TCharDecoding AOnCharDecoding, TCharEncoding AOnCharEncoding);
+	__fastcall TDosThread(TDosCommand* AOwner, System::UnicodeString ACl, System::UnicodeString ACurrDir, System::Classes::TStringList* ALines, System::Classes::TStrings* AOl, TProcessTimer* ATimer, int AMtab, int AMtalo, TNewLineEvent AOnl, TNewCharEvent AOnc, System::Classes::TNotifyEvent Ot, TTerminateProcessEvent AOtp, int Ap, bool Aito, System::Classes::TStrings* AEnv, TCharDecoding AOnCharDecoding, TCharEncoding AOnCharEncoding);
 	__fastcall virtual ~TDosThread(void);
 	HIDESBASE void __fastcall Terminate(void);
 	__property TInputLines* InputLines = {read=FInputLines};
@@ -349,7 +340,6 @@ private:
 	bool __fastcall get_IsRunning(void);
 	void __fastcall set_CharDecoding(const TCharDecoding AValue);
 	void __fastcall set_CharEncoding(const TCharEncoding AValue);
-	void __fastcall set_OutputLines(System::Classes::TStrings* AValue);
 	
 private:
 	int FEndStatus;
@@ -364,13 +354,13 @@ public:
 	__fastcall virtual TDosCommand(System::Classes::TComponent* AOwner);
 	__fastcall virtual ~TDosCommand(void);
 	void __fastcall Execute(void);
-	void __fastcall SendLine(System::UnicodeString AValue, bool AEol);
+	void __fastcall SendLine(const System::UnicodeString AValue, bool AEol);
 	void __fastcall Stop(void);
 	__property TEndStatus EndStatus = {read=get_EndStatus, nodefault};
 	__property unsigned ExitCode = {read=FExitCode, nodefault};
 	__property bool IsRunning = {read=get_IsRunning, nodefault};
 	__property System::Classes::TStringList* Lines = {read=FLines};
-	__property System::Classes::TStrings* OutputLines = {read=FOutputLines, write=set_OutputLines};
+	__property System::Classes::TStrings* OutputLines = {read=FOutputLines, write=FOutputLines};
 	__property int Priority = {read=FPriority, write=FPriority, nodefault};
 	__property _PROCESS_INFORMATION ProcessInformation = {read=FProcessInformation};
 	

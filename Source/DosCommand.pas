@@ -192,7 +192,7 @@ type
     property SinceLastOutput: Integer read get_SinceLastOutput;
   end;
 
-  TNewLineEvent = procedure(ASender: TObject; ANewLine: string; AOutputType: TOutputType) of object;
+  TNewLineEvent = procedure(ASender: TObject; const ANewLine: string; AOutputType: TOutputType) of object;
   // if New line is read via pipe
   TNewCharEvent = procedure(ASender: TObject; ANewChar: Char) of object;
   // every New char from pipe
@@ -279,27 +279,17 @@ type
     procedure DoEndStatus(AValue: TEndStatus);
     procedure DoLinesAdd(const AStr: string);
     procedure DoNewChar(AChar: Char);
-    // Doxxxxx-methods by sirius
-    procedure DoNewLine(const AStr: string; AOt: TOutputType);
-    procedure DoReadLine(ReadString: TSyncString; var Str, last: string; var LineBeginned: Boolean);
+    procedure DoNewLine(const AStr: string; AOutputType: TOutputType);
+    procedure DoReadLine(AReadString: TSyncString; var AStr, ALast: string; var ALineBeginned: Boolean);
     procedure DoSendLine(AWritePipe: THandle; var ALast: string; var ALineBeginned: Boolean);
-    procedure DoSyncLinesAdd;
-    procedure DoSyncNewChar;
-    procedure DoSyncNewLine;
-    procedure DoSyncOutPutAdd;
-    procedure DoSyncOutPutLastLine;
-    procedure DoSyncProcessInformation;
-    procedure DoSyncTerminateProcess;
     procedure DoTerminateProcess;
   private
     FExitCode: Cardinal;
   strict protected // DoSync-Methods are in Main-Thread-Context (called via Synchronize)
     FCanTerminate: Boolean;
-    FSyncOutputType: TOutputType;
-    FSyncStr: string;
     procedure Execute; override;
   public
-    constructor Create(AOwner: TDosCommand; ACl, ACurrDir: string; AL: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding); reintroduce;
+    constructor Create(AOwner: TDosCommand; ACl, ACurrDir: string; ALines: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding); reintroduce;
     destructor Destroy; override;
     procedure Terminate; reintroduce;
     property InputLines: TInputLines read FInputLines;
@@ -330,7 +320,6 @@ type
     function get_IsRunning: Boolean;
     procedure set_CharDecoding(const AValue: TCharDecoding);
     procedure set_CharEncoding(const AValue: TCharEncoding);
-    procedure set_OutputLines(AValue: TStrings);
   private
     FEndStatus: Integer;
     FProcessInformation: TProcessInformation;
@@ -342,13 +331,13 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Execute; // the user call this to execute the command
-    procedure SendLine(AValue: string; AEol: Boolean); // add a line in the input pipe
+    procedure SendLine(const AValue: string; AEol: Boolean); // add a line in the input pipe
     procedure Stop; // the user can stop the process with this method, stops process and waits
     property EndStatus: TEndStatus read get_EndStatus;
     property ExitCode: Cardinal read FExitCode;
     property IsRunning: Boolean read get_IsRunning; // When true, a command is still running // MK: 20030613
     property Lines: TStringList read FLines; // if the user want to access all the outputs of a process, he can use this property, lines is deleted before execution
-    property OutputLines: TStrings read FOutputLines write set_OutputLines; // can be lines of a memo, a richedit, a listbox, ...
+    property OutputLines: TStrings read FOutputLines write FOutputLines; // can be lines of a memo, a richedit, a listbox, ...
     property Priority: Integer read FPriority write FPriority; // stops process and waits, only for createprocess
     property ProcessInformation: TProcessInformation read FProcessInformation; // Processinformation from createprocess
   published
@@ -382,9 +371,6 @@ resourcestring
   STimerSetError = 'could not start timer';
   STimerKillError = 'could not kill timer';
 
-  { TProcessTimer }
-
-  // sirius2: global var to save ProcessTimer instances according to Timer-Event-IDs from WinAPI
 type
   PTimer = ^TTimer;
 
@@ -393,7 +379,6 @@ type
     Inst: TProcessTimer;
   end;
 
-  // sirius2: New timerproc
 procedure TimerProc(AHwnd: HWND; AMsg: Integer; AEventID: Integer; ATime: Integer); stdcall;
 var
   iCount: Integer;
@@ -420,6 +405,8 @@ begin
   if Assigned(pInst) then
     pInst.MyTimer;
 end;
+
+{ TProcessTimer }
 
 class constructor TProcessTimer.Create;
 begin
@@ -557,7 +544,7 @@ end;
 
 { TDosThread }
 
-constructor TDosThread.Create(AOwner: TDosCommand; ACl, ACurrDir: string; AL: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding);
+constructor TDosThread.Create(AOwner: TDosCommand; ACl, ACurrDir: string; ALines: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding);
 begin
   inherited Create(False);
   FOnCharEncoding := AOnCharEncoding;
@@ -569,7 +556,7 @@ begin
   FOwner.FEndStatus := Ord(esStill_Active);
   FCommandLine := ACl;
   FCurrentDir := ACurrDir;
-  FLines := AL;
+  FLines := ALines;
   FOutputLines := AOl;
   FInputLines := TInputLines.Create;
   FInputToOutput := Aito;
@@ -604,42 +591,48 @@ end;
 
 procedure TDosThread.DoLinesAdd(const AStr: string);
 begin
-  FSyncStr := AStr;
-  Synchronize(DoSyncLinesAdd);
+  Queue(procedure
+  begin
+    FLines.Add(AStr);
+  end);
 end;
 
 procedure TDosThread.DoNewChar(AChar: Char);
 begin
   if Assigned(FOnNewChar) then
   begin
-    FSyncStr := AChar;
-    Synchronize(DoSyncNewChar);
+    Queue(procedure
+    begin
+      FOnNewChar(FOwner, AChar);
+    end);
   end;
 end;
 
-procedure TDosThread.DoNewLine(const AStr: string; AOt: TOutputType);
+procedure TDosThread.DoNewLine(const AStr: string; AOutputType: TOutputType);
 begin
   if Assigned(FOnNewLine) then
   begin
-    FSyncStr := AStr;
-    FSyncOutputType := AOt;
-    Synchronize(DoSyncNewLine);
+    Queue(procedure
+    begin
+      FOnNewLine(FOwner, AStr, AOutputType);
+    end);
   end;
 end;
 
-procedure TDosThread.DoReadLine(ReadString: TSyncString; var Str, last: string; var LineBeginned: Boolean);
+procedure TDosThread.DoReadLine(AReadString: TSyncString; var AStr, ALast: string; var ALineBeginned: Boolean);
 var
   sReads: string;
   iCount, iLength: Integer;
+  sBuffer: string;
 begin
   // check to see if there is any data to read from stdout
-  sReads := ReadString.Value;
+  sReads := AReadString.Value;
   iLength := Length(sReads);
-  ReadString.Delete(1, iLength);
+  AReadString.Delete(1, iLength);
 
   if iLength > 0 then
   begin
-    Str := last; // take the begin of the line (if exists)
+    AStr := ALast; // take the begin of the line (if exists)
     for iCount := 1 to iLength do
     begin
       if Terminated then
@@ -657,40 +650,60 @@ begin
             then
               Continue;
             FTimer.NewOutput; // a New ouput has been caught
-            DoLinesAdd(Str); // add the line
+            DoLinesAdd(AStr); // add the line
             if Assigned(FOutputLines) then
             begin
-              FSyncStr := Str;
-              if LineBeginned then
+              if ALineBeginned then
               begin
-                Synchronize(DoSyncOutPutLastLine);
-                LineBeginned := False;
+                sBuffer := AStr;
+                Queue(procedure
+                begin
+                  FOutputLines[FOutputLines.Count - 1] := sBuffer;
+                end);
+                ALineBeginned := False;
               end
               else
-                Synchronize(DoSyncOutPutAdd);
+              begin
+                sBuffer := AStr;
+                Queue(procedure
+                begin
+                  FOutputLines.Add(sBuffer);
+                end);
+              end;
             end;
-            DoNewLine(Str, otEntireLine);
-            Str := '';
+            DoNewLine(AStr, otEntireLine);
+            AStr := '';
           end;
       else
         begin
-          Str := Str + sReads[iCount]; // add a character
+          AStr := AStr + sReads[iCount]; // add a character
         end;
       end;
     end;
-    last := Str; // no CRLF found in the rest, maybe in the next output
-    if (last <> '') then
+    ALast := AStr; // no CRLF found in the rest, maybe in the next output
+    if (ALast <> '') then
     begin
       if Assigned(FOutputLines) then
       begin
-        FSyncStr := last;
-        if LineBeginned then
-          Synchronize(DoSyncOutPutLastLine)
+        if ALineBeginned then
+        begin
+          sBuffer := ALast;
+          Queue(procedure
+          begin
+            FOutputLines[FOutputLines.Count - 1] := sBuffer;
+          end);
+        end
         else
-          Synchronize(DoSyncOutPutAdd);
+        begin
+          sBuffer := ALast;
+          Queue(procedure
+          begin
+            FOutputLines.Add(sBuffer);
+          end);
+        end;
       end;
-      DoNewLine(Str, otBeginningOfLine);
-      LineBeginned := True;
+      DoNewLine(AStr, otBeginningOfLine);
+      ALineBeginned := True;
     end;
   end
 end;
@@ -700,6 +713,7 @@ var
   sSends: string;
   bWrite: Cardinal;
   pBuf: TMemoryStream;
+  sBuffer: string;
 begin
   sSends := FInputLines[0];
   if (Copy(sSends, 1, 1) = '_') then
@@ -723,14 +737,19 @@ begin
         if ALineBeginned then
         begin // if we are continuing a line
           ALast := ALast + sSends;
-          FSyncStr := ALast;
-          Synchronize(DoSyncOutPutLastLine);
+          sBuffer := ALast;
+          Queue(procedure
+          begin
+            FOutputLines[FOutputLines.Count - 1] := sBuffer;
+          end);
           ALineBeginned := False;
         end
         else // if it's a New line
         begin
-          FSyncStr := sSends;
-          Synchronize(DoSyncOutPutAdd);
+          Queue(procedure
+          begin
+            FOutputLines.Add(sSends);
+          end);
         end;
       end;
       DoNewLine(ALast, otEntireLine);
@@ -742,46 +761,14 @@ begin
   end;
 end;
 
-procedure TDosThread.DoSyncLinesAdd;
-begin
-  FLines.Add(FSyncStr);
-end;
-
-procedure TDosThread.DoSyncNewChar;
-begin
-  FOnNewChar(FOwner, FSyncStr[1]);
-end;
-
-procedure TDosThread.DoSyncNewLine;
-begin
-  FOnNewLine(FOwner, FSyncStr, FSyncOutputType);
-end;
-
-procedure TDosThread.DoSyncOutPutAdd;
-begin
-  FOutputLines.Add(FSyncStr);
-end;
-
-procedure TDosThread.DoSyncOutPutLastLine;
-begin
-  FOutputLines[FOutputLines.Count - 1] := FSyncStr;
-end;
-
-procedure TDosThread.DoSyncProcessInformation;
-begin
-  FOwner.FProcessInformation := FProcessInformation;
-end;
-
-procedure TDosThread.DoSyncTerminateProcess;
-begin
-  FOnTerminateProcess(FOwner, FCanTerminate);
-end;
-
 procedure TDosThread.DoTerminateProcess;
 begin
   FCanTerminate := True;
   if Assigned(FOnTerminateProcess) then
-    Synchronize(DoSyncTerminateProcess);
+    Queue(procedure
+    begin
+      FOnTerminateProcess(FOwner, FCanTerminate);
+    end);
   if FCanTerminate then
   begin
     TerminateProcess(FProcessInformation.hProcess, 0);
@@ -927,7 +914,10 @@ begin // Execute
           [FCommandLine, SysErrorMessage(getlasterror)]);
       end;
 
-      Synchronize(DoSyncProcessInformation);
+      Queue(procedure
+      begin
+        FOwner.FProcessInformation := FProcessInformation;
+      end);
       // take Processinformation to mainthread
 
       // sirius2: close unneeded handles
@@ -1016,11 +1006,16 @@ begin // Execute
           DoLinesAdd(last);
           if Assigned(FOutputLines) then
           begin
-            FSyncStr := last;
             if LineBeginned then
-              Synchronize(DoSyncOutPutLastLine)
+              Queue(procedure
+              begin
+                FOutputLines[FOutputLines.Count - 1] := last;
+              end)
             else
-              Synchronize(DoSyncOutPutAdd);
+              Queue(procedure
+              begin
+                FOutputLines.Add(last);
+              end);
           end;
           DoNewLine(last, otEntireLine);
         end;
@@ -1138,7 +1133,7 @@ begin
   Result := Assigned(FThread); // sirius
 end;
 
-procedure TDosCommand.SendLine(AValue: string; AEol: Boolean);
+procedure TDosCommand.SendLine(const AValue: string; AEol: Boolean);
 const
   EolCh: array [Boolean] of Char = (' ', '_');
 begin
@@ -1162,12 +1157,6 @@ begin
     FOnCharEncoding := AValue
   else
     raise EDosCommand.CreateRes(@SStillRunning);
-end;
-
-procedure TDosCommand.set_OutputLines(AValue: TStrings);
-begin
-  if (FOutputLines <> AValue) then
-    FOutputLines := AValue;
 end;
 
 procedure TDosCommand.Stop;
