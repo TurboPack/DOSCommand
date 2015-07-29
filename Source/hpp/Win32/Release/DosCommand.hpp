@@ -278,7 +278,7 @@ private:
 	int FMaxTimeAfterBeginning;
 	int FMaxTimeAfterLastOutput;
 	TCharDecoding FOnCharDecoding;
-	TCharEncoding FonCharEncoding;
+	TCharEncoding FOnCharEncoding;
 	TNewCharEvent FOnNewChar;
 	TNewLineEvent FOnNewLine;
 	TTerminateProcessEvent FOnTerminateProcess;
@@ -295,24 +295,22 @@ private:
 	void __fastcall DoNewLine(const System::UnicodeString AStr, TOutputType AOt);
 	void __fastcall DoReadLine(TSyncString* ReadString, System::UnicodeString &Str, System::UnicodeString &last, bool &LineBeginned);
 	void __fastcall DoSendLine(NativeUInt AWritePipe, System::UnicodeString &ALast, bool &ALineBeginned);
+	void __fastcall DoSyncLinesAdd(void);
+	void __fastcall DoSyncNewChar(void);
+	void __fastcall DoSyncNewLine(void);
+	void __fastcall DoSyncOutPutAdd(void);
+	void __fastcall DoSyncOutPutLastLine(void);
+	void __fastcall DoSyncProcessInformation(void);
+	void __fastcall DoSyncTerminateProcess(void);
 	void __fastcall DoTerminateProcess(void);
 	
 private:
 	unsigned FExitCode;
 	
 protected:
-	bool FcanTerminate;
-	TEndStatus FSyncEndStatus;
+	bool FCanTerminate;
 	TOutputType FSyncOutputType;
 	System::UnicodeString FSyncStr;
-	virtual void __fastcall DoSyncEndStatus(void);
-	virtual void __fastcall DoSyncLinesAdd(void);
-	virtual void __fastcall DoSyncNewChar(void);
-	virtual void __fastcall DoSyncNewLine(void);
-	virtual void __fastcall DoSyncOutPutAdd(void);
-	virtual void __fastcall DoSyncOutPutLastLine(void);
-	virtual void __fastcall DoSyncProcessInformation(void);
-	virtual void __fastcall DoSyncTerminateProcess(void);
 	virtual void __fastcall Execute(void);
 	
 public:
@@ -337,7 +335,7 @@ private:
 	int FMaxTimeAfterBeginning;
 	int FMaxTimeAfterLastOutput;
 	TCharDecoding FOnCharDecoding;
-	TCharEncoding FonCharEncoding;
+	TCharEncoding FOnCharEncoding;
 	TErrorEvent FonExecuteError;
 	TNewCharEvent FOnNewChar;
 	TNewLineEvent FOnNewLine;
@@ -347,13 +345,14 @@ private:
 	int FPriority;
 	TDosThread* FThread;
 	TProcessTimer* FTimer;
+	TEndStatus __fastcall get_EndStatus(void);
 	bool __fastcall get_IsRunning(void);
 	void __fastcall set_CharDecoding(const TCharDecoding AValue);
 	void __fastcall set_CharEncoding(const TCharEncoding AValue);
 	void __fastcall set_OutputLines(System::Classes::TStrings* AValue);
 	
 private:
-	TEndStatus FEndStatus;
+	int FEndStatus;
 	_PROCESS_INFORMATION FProcessInformation;
 	
 protected:
@@ -367,7 +366,7 @@ public:
 	void __fastcall Execute(void);
 	void __fastcall SendLine(System::UnicodeString AValue, bool AEol);
 	void __fastcall Stop(void);
-	__property TEndStatus EndStatus = {read=FEndStatus, nodefault};
+	__property TEndStatus EndStatus = {read=get_EndStatus, nodefault};
 	__property unsigned ExitCode = {read=FExitCode, nodefault};
 	__property bool IsRunning = {read=get_IsRunning, nodefault};
 	__property System::Classes::TStringList* Lines = {read=FLines};
@@ -383,7 +382,7 @@ __published:
 	__property int MaxTimeAfterBeginning = {read=FMaxTimeAfterBeginning, write=FMaxTimeAfterBeginning, nodefault};
 	__property int MaxTimeAfterLastOutput = {read=FMaxTimeAfterLastOutput, write=FMaxTimeAfterLastOutput, nodefault};
 	__property TCharDecoding OnCharDecoding = {read=FOnCharDecoding, write=set_CharDecoding};
-	__property TCharEncoding OnCharEncoding = {read=FonCharEncoding, write=set_CharEncoding};
+	__property TCharEncoding OnCharEncoding = {read=FOnCharEncoding, write=set_CharEncoding};
 	__property TErrorEvent OnExecuteError = {read=FonExecuteError, write=FonExecuteError};
 	__property TNewCharEvent OnNewChar = {read=FOnNewChar, write=FOnNewChar};
 	__property TNewLineEvent OnNewLine = {read=FOnNewLine, write=FOnNewLine};

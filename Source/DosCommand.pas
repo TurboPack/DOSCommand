@@ -265,7 +265,7 @@ type
     FMaxTimeAfterBeginning: Integer;
     FMaxTimeAfterLastOutput: Integer;
     FOnCharDecoding: TCharDecoding;
-    FonCharEncoding: TCharEncoding;
+    FOnCharEncoding: TCharEncoding;
     FOnNewChar: TNewCharEvent;
     FOnNewLine: TNewLineEvent;
     FOnTerminateProcess: TTerminateProcessEvent;
@@ -283,23 +283,20 @@ type
     procedure DoNewLine(const AStr: string; AOt: TOutputType);
     procedure DoReadLine(ReadString: TSyncString; var Str, last: string; var LineBeginned: Boolean);
     procedure DoSendLine(AWritePipe: THandle; var ALast: string; var ALineBeginned: Boolean);
+    procedure DoSyncLinesAdd;
+    procedure DoSyncNewChar;
+    procedure DoSyncNewLine;
+    procedure DoSyncOutPutAdd;
+    procedure DoSyncOutPutLastLine;
+    procedure DoSyncProcessInformation;
+    procedure DoSyncTerminateProcess;
     procedure DoTerminateProcess;
   private
     FExitCode: Cardinal;
-  strict protected
-    FcanTerminate: Boolean;
-    FSyncEndStatus: TEndStatus;
+  strict protected // DoSync-Methods are in Main-Thread-Context (called via Synchronize)
+    FCanTerminate: Boolean;
     FSyncOutputType: TOutputType;
     FSyncStr: string;
-    procedure DoSyncEndStatus; virtual; // set EndStatus
-    procedure DoSyncLinesAdd; virtual; // add line to FLines
-    procedure DoSyncNewChar; virtual; // call NewChar-Event
-    procedure DoSyncNewLine; virtual; // call NewLine-Event
-    procedure DoSyncOutPutAdd; virtual; // add line to FOutputLines
-    // DoSync-Methods are in Main-Thread-Context (called via Synchronize)
-    procedure DoSyncOutPutLastLine; virtual; // change last line of FOutputLines
-    procedure DoSyncProcessInformation; virtual; // set ProcessInformation
-    procedure DoSyncTerminateProcess; virtual; // ask to terminate child process
     procedure Execute; override;
   public
     constructor Create(AOwner: TDosCommand; ACl, ACurrDir: string; AL: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding); reintroduce;
@@ -319,7 +316,7 @@ type
     FMaxTimeAfterBeginning: Integer;
     FMaxTimeAfterLastOutput: Integer;
     FOnCharDecoding: TCharDecoding; // sirius2
-    FonCharEncoding: TCharEncoding; // sirius2
+    FOnCharEncoding: TCharEncoding; // sirius2
     FonExecuteError: TErrorEvent;
     FOnNewChar: TNewCharEvent;
     FOnNewLine: TNewLineEvent;
@@ -329,12 +326,13 @@ type
     FPriority: Integer;
     FThread: TDosThread;
     FTimer: TProcessTimer;
+    function get_EndStatus: TEndStatus;
     function get_IsRunning: Boolean;
     procedure set_CharDecoding(const AValue: TCharDecoding);
     procedure set_CharEncoding(const AValue: TCharEncoding);
     procedure set_OutputLines(AValue: TStrings);
   private
-    FEndStatus: TEndStatus;
+    FEndStatus: Integer;
     FProcessInformation: TProcessInformation;
   strict protected
     function DoCharDecoding(ASender: TObject; ABuf: TStream): string; virtual;
@@ -346,7 +344,7 @@ type
     procedure Execute; // the user call this to execute the command
     procedure SendLine(AValue: string; AEol: Boolean); // add a line in the input pipe
     procedure Stop; // the user can stop the process with this method, stops process and waits
-    property EndStatus: TEndStatus read FEndStatus; // how the thread ended
+    property EndStatus: TEndStatus read get_EndStatus;
     property ExitCode: Cardinal read FExitCode;
     property IsRunning: Boolean read get_IsRunning; // When true, a command is still running // MK: 20030613
     property Lines: TStringList read FLines; // if the user want to access all the outputs of a process, he can use this property, lines is deleted before execution
@@ -361,7 +359,7 @@ type
     property MaxTimeAfterBeginning: Integer read FMaxTimeAfterBeginning write FMaxTimeAfterBeginning;
     property MaxTimeAfterLastOutput: Integer read FMaxTimeAfterLastOutput write FMaxTimeAfterLastOutput;
     property OnCharDecoding: TCharDecoding read FOnCharDecoding write set_CharDecoding;
-    property OnCharEncoding: TCharEncoding read FonCharEncoding write set_CharEncoding; // Events to convert buf to (Unicode-)string and reverse !!not needed if console of child uses AnsiString!! This event is not threadsafe !!!! dont change during execution
+    property OnCharEncoding: TCharEncoding read FOnCharEncoding write set_CharEncoding; // Events to convert buf to (Unicode-)string and reverse !!not needed if console of child uses AnsiString!! This event is not threadsafe !!!! dont change during execution
     property OnExecuteError: TErrorEvent read FonExecuteError write FonExecuteError; // event if DosCommand.execute is aborted via Exception
     property OnNewChar: TNewCharEvent read FOnNewChar write FOnNewChar; // event for each New char that is received through the pipe
     property OnNewLine: TNewLineEvent read FOnNewLine write FOnNewLine; // event for each New line that is received through the pipe
@@ -375,14 +373,14 @@ uses
   System.Types;
 
 resourcestring
-  sStillRunning = 'DosCommand still running';
-  sNotRunning = 'DosCommand not running';
-  sNoCommandLine = 'No Commandline to execute';
-  sProcessError = 'Error creating Process: %s - (%s)';
-  sPipeError = 'Error creating Pipe: %s';
-  sInstanceError = 'timer instance list not empty';
-  sTimerSetError = 'could not start timer';
-  sTimerKillError = 'could not kill timer';
+  SStillRunning = 'DosCommand still running';
+  SNotRunning = 'DosCommand not running';
+  SNoCommandLine = 'No Commandline to execute';
+  SProcessError = 'Error creating Process: %s - (%s)';
+  SPipeError = 'Error creating Pipe: %s';
+  SInstanceError = 'timer instance list not empty';
+  STimerSetError = 'could not start timer';
+  STimerKillError = 'could not kill timer';
 
   { TProcessTimer }
 
@@ -522,7 +520,7 @@ begin
       if FID = 0 then
       begin
         FEnabled := False;
-        raise EProcessTimer.CreateRes(@sTimerSetError);
+        raise EProcessTimer.CreateRes(@STimerSetError);
       end
       else
       begin
@@ -535,7 +533,7 @@ begin
     else
       // stoptimer and delete timer-id in timerinstances
       if not KillTimer(0, FID) then
-        raise EProcessTimer.CreateRes(@sTimerKillError)
+        raise EProcessTimer.CreateRes(@STimerKillError)
       else
       begin
         pList := TProcessTimer.FTimerInstances.LockList;
@@ -557,16 +555,18 @@ begin
   end;
 end;
 
+{ TDosThread }
+
 constructor TDosThread.Create(AOwner: TDosCommand; ACl, ACurrDir: string; AL: TStringList; AOl: TStrings; ATimer: TProcessTimer; AMtab, AMtalo: Integer; AOnl: TNewLineEvent; AOnc: TNewCharEvent; Ot: TNotifyEvent; AOtp: TTerminateProcessEvent; Ap: Integer; Aito: Boolean; AEnv: TStrings; AOnCharDecoding: TCharDecoding; AOnCharEncoding: TCharEncoding);
 begin
   inherited Create(False);
-  FonCharEncoding := AOnCharEncoding;
+  FOnCharEncoding := AOnCharEncoding;
   FOnCharDecoding := AOnCharDecoding;
   FEnvironment := TStringList.Create;
   FEnvironment.AddStrings(AEnv);
   FreeOnTerminate := True;
   FOwner := AOwner;
-  FOwner.FEndStatus := esStill_Active;
+  FOwner.FEndStatus := Ord(esStill_Active);
   FCommandLine := ACl;
   FCurrentDir := ACurrDir;
   FLines := AL;
@@ -599,8 +599,7 @@ end;
 
 procedure TDosThread.DoEndStatus(AValue: TEndStatus);
 begin
-  FSyncEndStatus := AValue;
-  Synchronize(DoSyncEndStatus);
+  TInterlocked.Exchange(FOwner.FEndStatus, Ord(AValue));
 end;
 
 procedure TDosThread.DoLinesAdd(const AStr: string);
@@ -656,7 +655,7 @@ begin
           begin
             if (iCount > 1) and (sReads[iCount] = Char(10)) and (sReads[iCount - 1] = Char(13))
             then
-              continue;
+              Continue;
             FTimer.NewOutput; // a New ouput has been caught
             DoLinesAdd(Str); // add the line
             if Assigned(FOutputLines) then
@@ -711,7 +710,7 @@ begin
   begin
     pBuf := TMemoryStream.Create;
     try
-      FonCharEncoding(Self, sSends, pBuf);
+      FOnCharEncoding(Self, sSends, pBuf);
       Assert(WriteFile(AWritePipe, pBuf.memory^, pBuf.Size, bWrite, nil));
       // send it to stdin
     finally
@@ -741,11 +740,6 @@ begin
     FInputLines.Delete(0); // delete the line that has been send
 
   end;
-end;
-
-procedure TDosThread.DoSyncEndStatus;
-begin
-  FOwner.FEndStatus := FSyncEndStatus;
 end;
 
 procedure TDosThread.DoSyncLinesAdd;
@@ -780,23 +774,21 @@ end;
 
 procedure TDosThread.DoSyncTerminateProcess;
 begin
-  FOnTerminateProcess(FOwner, FcanTerminate);
+  FOnTerminateProcess(FOwner, FCanTerminate);
 end;
 
 procedure TDosThread.DoTerminateProcess;
 begin
-  FcanTerminate := True;
+  FCanTerminate := True;
   if Assigned(FOnTerminateProcess) then
     Synchronize(DoSyncTerminateProcess);
-  if FcanTerminate then
+  if FCanTerminate then
   begin
     TerminateProcess(FProcessInformation.hProcess, 0);
     CloseHandle(FProcessInformation.hProcess);
     CloseHandle(FProcessInformation.hThread);
   end;
 end;
-
-// ------------------------------------------------------------------------------
 
 procedure TDosThread.Execute;
 const
@@ -840,37 +832,37 @@ begin // Execute
 
       // sirius2: Pipe creation changed to microsoft knowledge base article ID: 190351
       if not(CreatePipe(outputreadtmp, outputwrite, sa, 0)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       if not(DuplicateHandle(GetCurrentProcess, outputwrite, GetCurrentProcess,
         @errorwrite, 0, True, DUPLICATE_SAME_ACCESS)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
       if not(DuplicateHandle(GetCurrentProcess, outputwrite, GetCurrentProcess,
         @myoutputwrite, 0, False, DUPLICATE_SAME_ACCESS)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       if not(CreatePipe(inputRead, inputWritetmp, sa, 0)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       if not(DuplicateHandle(GetCurrentProcess, outputreadtmp,
         GetCurrentProcess, @outputread, 0, False, DUPLICATE_SAME_ACCESS)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       if not(DuplicateHandle(GetCurrentProcess, inputWritetmp,
         GetCurrentProcess, @inputWrite, 0, False, DUPLICATE_SAME_ACCESS)) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       if not CloseHandle(outputreadtmp) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
       if not CloseHandle(inputWritetmp) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       GetStartupInfo(si); // set startupinfo for the spawned process
@@ -931,7 +923,7 @@ begin // Execute
 {$ENDIF}
         , lpEnvironment, currDir, si, FProcessInformation)) then
       begin
-        raise ECreateProcessError.CreateResFmt(@sProcessError,
+        raise ECreateProcessError.CreateResFmt(@SProcessError,
           [FCommandLine, SysErrorMessage(getlasterror)]);
       end;
 
@@ -940,13 +932,13 @@ begin // Execute
 
       // sirius2: close unneeded handles
       if not CloseHandle(outputwrite) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
       if not CloseHandle(inputRead) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
       if not CloseHandle(errorwrite) then
-        raise ECreatePipeError.CreateResFmt(@sPipeError,
+        raise ECreatePipeError.CreateResFmt(@SPipeError,
           [SysErrorMessage(getlasterror)]);
 
       ReadPipeThread := TReadPipe.Create(outputread, myoutputwrite,
@@ -1007,11 +999,11 @@ begin // Execute
         if (FExitCode <> STILL_ACTIVE) then
         begin
           DoEndStatus(esProcess);
-          FcanTerminate := False;
+          FCanTerminate := False;
         end
         else
         begin
-          FcanTerminate := True;
+          FCanTerminate := True;
           if Terminated then
             DoEndStatus(esStop)
           else
@@ -1036,7 +1028,7 @@ begin // Execute
         ReadPipeThread.Terminate;
         ReadPipeThread.WaitFor;
         ReadPipeThread.Free;
-        if FcanTerminate then
+        if FCanTerminate then
           Waitforsingleobject(FProcessInformation.hProcess, 1000);
         GetExitCodeProcess(FProcessInformation.hProcess, FExitCode);
       end;
@@ -1060,7 +1052,7 @@ begin
   FTerminateEvent.SetEvent;
 end;
 
-// ------------------------------------------------------------------------------
+{ TDosCommand }
 
 constructor TDosCommand.Create(AOwner: TComponent);
 begin
@@ -1072,7 +1064,7 @@ begin
   FMaxTimeAfterBeginning := 0;
   FMaxTimeAfterLastOutput := 0;
   FPriority := NORMAL_PRIORITY_CLASS;
-  FEndStatus := esNone;
+  FEndStatus := Ord(esNone);
   FEnvironment := TStringList.Create;
 end;
 
@@ -1110,8 +1102,8 @@ procedure TDosCommand.DoCharEncoding(ASender: TObject; const AChars: string; AOu
 var
   pBytes: TBytes;
 begin
-  if Assigned(FonCharEncoding) then
-    FonCharEncoding(Self, AChars, AOutBuf)
+  if Assigned(FOnCharEncoding) then
+    FOnCharEncoding(Self, AChars, AOutBuf)
   else if Length(AChars) > 0 then
   begin
     pBytes := TEncoding.ANSI.GetBytes(AChars);
@@ -1122,10 +1114,10 @@ end;
 procedure TDosCommand.Execute;
 begin
   if FThread <> nil then
-    raise EDosCommand.CreateRes(@sStillRunning);
+    raise EDosCommand.CreateRes(@SStillRunning);
 
   if FCommandLine = '' then // MK: 20030613
-    raise EDosCommand.CreateRes(@sNoCommandLine);
+    raise EDosCommand.CreateRes(@SNoCommandLine);
   if (FTimer = nil) then // create the timer (first call to execute)
     FTimer := TProcessTimer.Create;
   FLines.Clear; // clear old outputs
@@ -1134,7 +1126,11 @@ begin
     FOutputLines, FTimer, FMaxTimeAfterBeginning, FMaxTimeAfterLastOutput,
     FOnNewLine, FOnNewChar, ThreadTerminated, FOnTerminateProcess, FPriority,
     FInputToOutput, FEnvironment, DoCharDecoding, DoCharEncoding);
+end;
 
+function TDosCommand.get_EndStatus: TEndStatus;
+begin
+  Result := TEndStatus(FEndStatus);
 end;
 
 function TDosCommand.get_IsRunning: Boolean;
@@ -1149,7 +1145,7 @@ begin
   if (FThread <> nil) then
     FThread.InputLines.Add(EolCh[AEol] + AValue)
   else
-    raise EDosCommand.CreateRes(@sNotRunning);
+    raise EDosCommand.CreateRes(@SNotRunning);
 end;
 
 procedure TDosCommand.set_CharDecoding(const AValue: TCharDecoding);
@@ -1157,15 +1153,15 @@ begin
   if not IsRunning then
     FOnCharDecoding := AValue
   else
-    raise EDosCommand.CreateRes(@sStillRunning);
+    raise EDosCommand.CreateRes(@SStillRunning);
 end;
 
 procedure TDosCommand.set_CharEncoding(const AValue: TCharEncoding);
 begin
   if not IsRunning then
-    FonCharEncoding := AValue
+    FOnCharEncoding := AValue
   else
-    raise EDosCommand.CreateRes(@sStillRunning);
+    raise EDosCommand.CreateRes(@SStillRunning);
 end;
 
 procedure TDosCommand.set_OutputLines(AValue: TStrings);
@@ -1223,6 +1219,8 @@ begin
     FOnTerminated(Self);
 end;
 
+{ TInputLines }
+
 constructor TInputLines.Create;
 begin
   inherited Create;
@@ -1241,10 +1239,6 @@ begin
   end;
   inherited Destroy;
 end;
-
-// ------------------------------------------------------------------------------
-
-{ TInputLines }
 
 function TInputLines.Add(const AValue: string): Integer;
 var
@@ -1318,8 +1312,6 @@ begin
   EndWrite;
 end;
 
-// ------------------------------------------------------------------------------
-
 { TSyncString }
 
 procedure TSyncString.Add(const AValue: string);
@@ -1371,8 +1363,6 @@ begin
     EndWrite;
   end;
 end;
-
-// ------------------------------------------------------------------------------
 
 { TReadPipe }
 
