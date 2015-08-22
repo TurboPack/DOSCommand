@@ -2,7 +2,7 @@
 // Copyright (c) 1995, 2015 by Embarcadero Technologies, Inc.
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'DOSCommandDR.dpk' rev: 29.00 (Windows)
+// (DO NOT EDIT: machine generated header) 'DOSCommandDR.dpk' rev: 30.00 (Windows)
 
 #ifndef DoscommanddrHPP
 #define DoscommanddrHPP
@@ -16,6 +16,7 @@
 #include <SysInit.hpp>
 #include <DosCommand.hpp>
 #include <Winapi.Windows.hpp>	// (rtl)
+#include <System.Character.hpp>	// (rtl)
 #include <System.Internal.ExcUtils.hpp>	// (rtl)
 #include <System.SysUtils.hpp>	// (rtl)
 #include <System.VarUtils.hpp>	// (rtl)
