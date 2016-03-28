@@ -2,31 +2,40 @@
 // Copyright (c) 1995, 2016 by Embarcadero Technologies, Inc.
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'pasall.pas' rev: 31.00 (Windows)
+// (DO NOT EDIT: machine generated header) 'DosCommand.Register.pas' rev: 31.00 (Windows)
 
-#ifndef PasallHPP
-#define PasallHPP
+#ifndef Doscommand_RegisterHPP
+#define Doscommand_RegisterHPP
 
 #pragma delphiheader begin
 #pragma option push
 #pragma option -w-      // All warnings off
 #pragma option -Vx      // Zero-length empty class member 
 #pragma pack(push,8)
+#include <System.hpp>
+#include <SysInit.hpp>
 
 //-- user supplied -----------------------------------------------------------
 
-namespace Pasall
+namespace Doscommand
+{
+namespace Register
 {
 //-- forward type declarations -----------------------------------------------
 //-- type declarations -------------------------------------------------------
 //-- var, const, procedure ---------------------------------------------------
-}	/* namespace Pasall */
-#if !defined(DELPHIHEADER_NO_IMPLICIT_NAMESPACE_USE) && !defined(NO_USING_NAMESPACE_PASALL)
-using namespace Pasall;
+extern DELPHI_PACKAGE void __fastcall Register(void);
+}	/* namespace Register */
+}	/* namespace Doscommand */
+#if !defined(DELPHIHEADER_NO_IMPLICIT_NAMESPACE_USE) && !defined(NO_USING_NAMESPACE_DOSCOMMAND_REGISTER)
+using namespace Doscommand::Register;
+#endif
+#if !defined(DELPHIHEADER_NO_IMPLICIT_NAMESPACE_USE) && !defined(NO_USING_NAMESPACE_DOSCOMMAND)
+using namespace Doscommand;
 #endif
 #pragma pack(pop)
 #pragma option pop
 
 #pragma delphiheader end.
 //-- end unit ----------------------------------------------------------------
-#endif	// PasallHPP
+#endif	// Doscommand_RegisterHPP
