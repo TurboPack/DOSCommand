@@ -569,6 +569,7 @@ begin
   FMaxTimeAfterLastOutput := AMtalo;
   FPriority := Ap;
   FTerminateEvent := TEvent.Create(nil, True, False, '');
+  FreeOnTerminate := False;
 end;
 
 destructor TDosThread.Destroy;
@@ -1163,7 +1164,6 @@ procedure TDosCommand.Stop;
 begin
   if (FThread <> nil) then
   begin
-    FThread.FreeOnTerminate := False;
     FThread.Terminate; // by sirius
     FThread.WaitFor; // by sirius2
     FreeAndNil(FThread);
