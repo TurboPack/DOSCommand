@@ -569,7 +569,6 @@ begin
   FMaxTimeAfterLastOutput := AMtalo;
   FPriority := Ap;
   FTerminateEvent := TEvent.Create(nil, True, False, '');
-  FreeOnTerminate := False;
 end;
 
 destructor TDosThread.Destroy;

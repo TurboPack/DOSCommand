@@ -2,7 +2,7 @@
 // Copyright (c) 1995, 2016 by Embarcadero Technologies, Inc.
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'DOSCommandDR.dpk' rev: 31.00 (Windows)
+// (DO NOT EDIT: machine generated header) 'DOSCommandDR.dpk' rev: 32.00 (Windows)
 
 #ifndef DoscommanddrHPP
 #define DoscommanddrHPP
@@ -40,6 +40,11 @@
 #include <System.TimeSpan.hpp>	// (rtl)
 #include <System.Diagnostics.hpp>	// (rtl)
 #include <System.SyncObjs.hpp>	// (rtl)
+// SO_SFX: 250
+// PRG_EXT: .bpl
+// BPI_DIR: C:\Users\Public\Documents\Embarcadero\Studio\19.0\Dcp\Win64
+// OBJ_DIR: C:\Users\Public\Documents\Embarcadero\Studio\19.0\Dcp\Win64
+// OBJ_EXT: .o
 
 //-- user supplied -----------------------------------------------------------
 
