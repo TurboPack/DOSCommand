@@ -11,8 +11,6 @@ You can still access [10.2 Tokyo](https://github.com/TurboPack/DOSCommand/releas
 3.  Installation
 4.  License
 
--------
-
 ## 1. Introduction
 
 TurboPack DOSCommand component let you execute a dos program (exe, com or batch file) and catch
@@ -24,8 +22,6 @@ the program to get back the output. it comes line by line.
 
 This is a source-only release of TurboPack DOSCommand. It includes
 designtime and runtime packages for Delphi and C++Builder. It supports Win32 and Win64.
-
------
 
 ## 2. Package names
 
@@ -43,8 +39,6 @@ The runtime package contains the core functionality of the product and
 is not installed into the IDE. The designtime package references the
 runtime package, registers the components, and contains property
 editors used in the IDE.
-
-----
 
 ## 3. Installation
 
@@ -67,8 +61,6 @@ steps:
   5. Open & install the designtime package specific to the IDE being
      used. The IDE should notify you the components have been
      installed.
-
-----
 
 ## 4. License
 
