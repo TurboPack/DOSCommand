@@ -26,7 +26,7 @@ package DOSCommandDD;
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
 {$DESCRIPTION 'TurboPack DOSCommand Designtime Package for Delphi'}
-{$LIBSUFFIX '250'}
+{$LIBSUFFIX '260'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
 

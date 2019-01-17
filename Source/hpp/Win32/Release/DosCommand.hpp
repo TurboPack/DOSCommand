@@ -1,8 +1,8 @@
 ﻿// CodeGear C++Builder
-// Copyright (c) 1995, 2016 by Embarcadero Technologies, Inc.
+// Copyright (c) 1995, 2017 by Embarcadero Technologies, Inc.
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'DosCommand.pas' rev: 32.00 (Windows)
+// (DO NOT EDIT: machine generated header) 'DosCommand.pas' rev: 33.00 (Windows)
 
 #ifndef DoscommandHPP
 #define DoscommandHPP
@@ -54,7 +54,7 @@ public:
 	/* Exception.CreateResHelp */ inline __fastcall EDosCommand(System::PResStringRec ResStringRec, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall EDosCommand(System::PResStringRec ResStringRec, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, Args, Args_High, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall EDosCommand(NativeUInt Ident, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(Ident, Args, Args_High, AHelpContext) { }
-	/* Exception.Destroy */ inline __fastcall virtual ~EDosCommand(void) { }
+	/* Exception.Destroy */ inline __fastcall virtual ~EDosCommand() { }
 	
 };
 
@@ -78,7 +78,7 @@ public:
 	/* Exception.CreateResHelp */ inline __fastcall ECreatePipeError(System::PResStringRec ResStringRec, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall ECreatePipeError(System::PResStringRec ResStringRec, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, Args, Args_High, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall ECreatePipeError(NativeUInt Ident, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(Ident, Args, Args_High, AHelpContext) { }
-	/* Exception.Destroy */ inline __fastcall virtual ~ECreatePipeError(void) { }
+	/* Exception.Destroy */ inline __fastcall virtual ~ECreatePipeError() { }
 	
 };
 
@@ -102,7 +102,7 @@ public:
 	/* Exception.CreateResHelp */ inline __fastcall ECreateProcessError(System::PResStringRec ResStringRec, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall ECreateProcessError(System::PResStringRec ResStringRec, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, Args, Args_High, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall ECreateProcessError(NativeUInt Ident, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(Ident, Args, Args_High, AHelpContext) { }
-	/* Exception.Destroy */ inline __fastcall virtual ~ECreateProcessError(void) { }
+	/* Exception.Destroy */ inline __fastcall virtual ~ECreateProcessError() { }
 	
 };
 
@@ -126,7 +126,7 @@ public:
 	/* Exception.CreateResHelp */ inline __fastcall EProcessTimer(System::PResStringRec ResStringRec, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall EProcessTimer(System::PResStringRec ResStringRec, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(ResStringRec, Args, Args_High, AHelpContext) { }
 	/* Exception.CreateResFmtHelp */ inline __fastcall EProcessTimer(NativeUInt Ident, const System::TVarRec *Args, const int Args_High, int AHelpContext)/* overload */ : System::Sysutils::Exception(Ident, Args, Args_High, AHelpContext) { }
-	/* Exception.Destroy */ inline __fastcall virtual ~EProcessTimer(void) { }
+	/* Exception.Destroy */ inline __fastcall virtual ~EProcessTimer() { }
 	
 };
 
@@ -152,28 +152,28 @@ private:
 	int FID;
 	int FSinceBeginning;
 	int FSinceLastOutput;
-	int __fastcall get_SinceBeginning(void);
-	int __fastcall get_SinceLastOutput(void);
+	int __fastcall get_SinceBeginning();
+	int __fastcall get_SinceLastOutput();
 	void __fastcall set_Enabled(const bool AValue);
 	
 private:
 	static System::Classes::TThreadList* FTimerInstances;
-	void __fastcall MyTimer(void);
+	void __fastcall MyTimer();
 	
 private:
 	// __classmethod void __fastcall Create@();
 	
 public:
-	__fastcall TProcessTimer(void);
+	__fastcall TProcessTimer();
 	
 private:
 	// __classmethod void __fastcall Destroy@();
 	
 public:
-	__fastcall virtual ~TProcessTimer(void);
-	void __fastcall Beginning(void);
-	void __fastcall Ending(void);
-	void __fastcall NewOutput(void);
+	__fastcall virtual ~TProcessTimer();
+	void __fastcall Beginning();
+	void __fastcall Ending();
+	void __fastcall NewOutput();
 	__property bool Enabled = {read=FEnabled, write=set_Enabled, nodefault};
 	__property System::Syncobjs::TEvent* Event = {read=FEvent};
 	__property int SinceBeginning = {read=get_SinceBeginning, nodefault};
@@ -205,13 +205,13 @@ private:
 	void __fastcall set_Strings(int AIndex, const System::UnicodeString AValue);
 	
 public:
-	__fastcall TInputLines(void);
-	__fastcall virtual ~TInputLines(void);
+	__fastcall TInputLines();
+	__fastcall virtual ~TInputLines();
 	int __fastcall Add(const System::UnicodeString AValue);
-	int __fastcall Count(void);
+	int __fastcall Count();
 	void __fastcall Delete(int AIndex);
-	System::Classes::TStrings* __fastcall LockList(void);
-	void __fastcall UnlockList(void);
+	System::Classes::TStrings* __fastcall LockList();
+	void __fastcall UnlockList();
 	__property System::Syncobjs::TEvent* Event = {read=FEvent};
 	__property System::UnicodeString Strings[int AIndex] = {read=get_Strings, write=set_Strings/*, default*/};
 };
@@ -225,17 +225,17 @@ class PASCALIMPLEMENTATION TSyncString : public System::Sysutils::TSimpleRWSync
 	
 private:
 	System::UnicodeString FValue;
-	System::UnicodeString __fastcall get_Value(void);
+	System::UnicodeString __fastcall get_Value();
 	void __fastcall set_Value(const System::UnicodeString AValue);
 	
 public:
 	void __fastcall Add(const System::UnicodeString AValue);
 	void __fastcall Delete(int APos, int ACount);
-	int __fastcall Length(void);
+	int __fastcall Length();
 	__property System::UnicodeString Value = {read=get_Value, write=set_Value};
 public:
-	/* TSimpleRWSync.Create */ inline __fastcall TSyncString(void) : System::Sysutils::TSimpleRWSync() { }
-	/* TSimpleRWSync.Destroy */ inline __fastcall virtual ~TSyncString(void) { }
+	/* TSimpleRWSync.Create */ inline __fastcall TSyncString() : System::Sysutils::TSimpleRWSync() { }
+	/* TSimpleRWSync.Destroy */ inline __fastcall virtual ~TSyncString() { }
 	
 };
 
@@ -253,12 +253,12 @@ private:
 	TSyncString* FSyncString;
 	
 protected:
-	virtual void __fastcall Execute(void);
+	virtual void __fastcall Execute();
 	
 public:
 	__fastcall TReadPipe(NativeUInt AReadStdout, NativeUInt AWriteStdout, TCharDecoding AOnCharDecoding);
-	__fastcall virtual ~TReadPipe(void);
-	HIDESBASE void __fastcall Terminate(void);
+	__fastcall virtual ~TReadPipe();
+	HIDESBASE void __fastcall Terminate();
 	__property System::Syncobjs::TEvent* Event = {read=FEvent};
 	__property TSyncString* ReadString = {read=FSyncString};
 };
@@ -295,19 +295,19 @@ private:
 	void __fastcall DoNewLine(const System::UnicodeString AStr, TOutputType AOutputType);
 	void __fastcall DoReadLine(TSyncString* AReadString, System::UnicodeString &AStr, System::UnicodeString &ALast, bool &ALineBeginned);
 	void __fastcall DoSendLine(NativeUInt AWritePipe, System::UnicodeString &ALast, bool &ALineBeginned);
-	void __fastcall DoTerminateProcess(void);
+	void __fastcall DoTerminateProcess();
 	
 private:
 	unsigned FExitCode;
 	
 protected:
 	bool FCanTerminate;
-	virtual void __fastcall Execute(void);
+	virtual void __fastcall Execute();
 	
 public:
 	__fastcall TDosThread(TDosCommand* AOwner, System::UnicodeString ACl, System::UnicodeString ACurrDir, System::Classes::TStringList* ALines, System::Classes::TStrings* AOl, TProcessTimer* ATimer, int AMtab, int AMtalo, TNewLineEvent AOnl, TNewCharEvent AOnc, System::Classes::TNotifyEvent Ot, TTerminateProcessEvent AOtp, int Ap, bool Aito, System::Classes::TStrings* AEnv, TCharDecoding AOnCharDecoding, TCharEncoding AOnCharEncoding);
-	__fastcall virtual ~TDosThread(void);
-	HIDESBASE void __fastcall Terminate(void);
+	__fastcall virtual ~TDosThread();
+	HIDESBASE void __fastcall Terminate();
 	__property TInputLines* InputLines = {read=FInputLines};
 };
 
@@ -336,8 +336,8 @@ private:
 	int FPriority;
 	TDosThread* FThread;
 	TProcessTimer* FTimer;
-	TEndStatus __fastcall get_EndStatus(void);
-	bool __fastcall get_IsRunning(void);
+	TEndStatus __fastcall get_EndStatus();
+	bool __fastcall get_IsRunning();
 	void __fastcall set_CharDecoding(const TCharDecoding AValue);
 	void __fastcall set_CharEncoding(const TCharEncoding AValue);
 	
@@ -352,10 +352,10 @@ protected:
 	
 public:
 	__fastcall virtual TDosCommand(System::Classes::TComponent* AOwner);
-	__fastcall virtual ~TDosCommand(void);
-	void __fastcall Execute(void);
+	__fastcall virtual ~TDosCommand();
+	void __fastcall Execute();
 	void __fastcall SendLine(const System::UnicodeString AValue, bool AEol);
-	void __fastcall Stop(void);
+	void __fastcall Stop();
 	__property TEndStatus EndStatus = {read=get_EndStatus, nodefault};
 	__property unsigned ExitCode = {read=FExitCode, nodefault};
 	__property bool IsRunning = {read=get_IsRunning, nodefault};
