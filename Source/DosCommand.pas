@@ -1164,8 +1164,8 @@ begin
   if (FThread <> nil) then
   begin
     FThread.Terminate; // by sirius
-    FThread.WaitFor; // by sirius2
-    FreeAndNil(FThread);
+    // FThread.WaitFor; // by sirius2
+    // FreeAndNil(FThread);
   end;
 end;
 
