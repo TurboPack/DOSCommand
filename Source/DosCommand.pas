@@ -969,12 +969,12 @@ begin // Execute
           DoNewLine(last, otEntireLine);
         end;
       finally
-        ReadPipeThread.Terminate;
-        ReadPipeThread.WaitFor;
-        ReadPipeThread.Free;
         if FCanTerminate then
           Waitforsingleobject(FProcessInformation.hProcess, 1000);
         GetExitCodeProcess(FProcessInformation.hProcess, FExitCode);
+        ReadPipeThread.Terminate;
+        ReadPipeThread.WaitFor;
+        FreeAndNil(ReadPipeThread);
       end;
     finally
       FreeMem(sd);
@@ -985,8 +985,12 @@ begin // Execute
       CloseHandle(myoutputwrite);
     end;
   except
-    DoEndStatus(esError);
-    raise;
+    on e: Exception do
+    begin
+      OutputDebugString(PChar('EXCEPTION: TDosThread ' + e.Message));
+      DoEndStatus(esError);
+      raise;
+    end;
   end;
 end;
 
@@ -1327,23 +1331,32 @@ var
   Buf: TStream;
   bread: Cardinal;
 begin
-  repeat
-    FillChar(rBuf, Length(rBuf), 0);
-    if not ReadFile(Fread_stdout, rBuf[0], Length(rBuf), bread, nil) then
-    // wait for input
-      Assert(getlasterror = Error_broken_pipe);
-    if Terminated then
-      Exit;
+  try
+    NameThreadForDebugging('TReadPipe');
     Buf := TMemoryStream.Create;
     try
-      Buf.Write(rBuf[0], bread);
-      Buf.Seek(0, soFromBeginning);
-      FSyncString.Add(FOnCharDecoding(Self, Buf));
+      repeat
+        FillChar(rBuf, Length(rBuf), 0);
+        if not ReadFile(Fread_stdout, rBuf[0], Length(rBuf), bread, nil) then
+        // wait for input
+          Assert(GetLastError = Error_broken_pipe);
+        if Terminated then
+          Break;
+        Buf.Size := 0;
+        Buf.Write(rBuf[0], bread);
+        Buf.Seek(0, soFromBeginning);
+        FSyncString.Add(FOnCharDecoding(Self, Buf));
+        FEvent.SetEvent;
+      until Terminated;
     finally
-      Buf.Free;
+      FreeAndNil(Buf);
     end;
-    FEvent.SetEvent;
-  until Terminated;
+  except
+    on e: Exception do
+    begin
+      OutputDebugString(PChar('EXCEPTION: TReadPipe Execute ' + e.Message));
+    end;
+  end;
 end;
 
 procedure TReadPipe.Terminate;
