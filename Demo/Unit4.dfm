@@ -16,8 +16,9 @@ object Form4: TForm4
   object Memo1: TMemo
     Left = 24
     Top = 8
-    Width = 665
+    Width = 273
     Height = 273
+    ScrollBars = ssBoth
     TabOrder = 0
   end
   object Button1: TButton
@@ -29,10 +30,20 @@ object Form4: TForm4
     TabOrder = 1
     OnClick = Button1Click
   end
+  object Memo2: TMemo
+    Left = 344
+    Top = 8
+    Width = 273
+    Height = 273
+    ScrollBars = ssBoth
+    TabOrder = 2
+  end
   object DosCommand1: TDosCommand
     InputToOutput = False
     MaxTimeAfterBeginning = 0
-    MaxTimeAfterLastOutput = 0
+    MaxTimeAfterLastOutput = 1000
+    OnNewLine = DosCommand1NewLine
+    OnTerminated = DosCommand1Terminated
     Left = 760
     Top = 104
   end
