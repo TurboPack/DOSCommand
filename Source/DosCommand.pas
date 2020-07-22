@@ -754,10 +754,11 @@ var
   envText: string;
   ReadPipeThread: TReadPipe;
   lpEnvironment: Pointer;
-  WaitHandles: array [1 .. 5] of THandle;
+  WaitHandles: array [0 .. 4] of THandle;
   iCount: Integer;
   pc, pc2: PChar;
 begin // Execute
+  NameThreadForDebugging('TDosThread');
   try
     sa := nil;
     sd := nil;
@@ -906,15 +907,15 @@ begin // Execute
         repeat // main program loop
 
           // thread is waiting to one of
-          WaitHandles[1] := ReadPipeThread.Event.Handle;
+          WaitHandles[0] := ReadPipeThread.Event.Handle;
           // New output from childprocess
-          WaitHandles[2] := FInputLines.Event.Handle;
+          WaitHandles[1] := FInputLines.Event.Handle;
           // user has New line (TDosCommand.Sendline) to deliver
-          WaitHandles[3] := FProcessInformation.hProcess;
+          WaitHandles[2] := FProcessInformation.hProcess;
           // Process-Ending (child)
-          WaitHandles[4] := FTerminateEvent.Handle;
+          WaitHandles[3] := FTerminateEvent.Handle;
           // Termination of this thread (from mainthread)
-          WaitHandles[5] := FTimer.Event.Handle; // timer elapsed (each second)
+          WaitHandles[4] := FTimer.Event.Handle; // timer elapsed (each second)
 
           case WaitforMultipleObjects(Length(WaitHandles), @WaitHandles, False,
             infinite) of
@@ -935,8 +936,7 @@ begin // Execute
             Wait_Object_0 + 0:
               begin // ReadEvent
                 while ReadPipeThread.ReadString.Length > 0 do
-                  DoReadLine(ReadPipeThread.ReadString, Str, last,
-                    LineBeginned);
+                  DoReadLine(ReadPipeThread.ReadString, Str, last, LineBeginned);
               end;
 
           end;
