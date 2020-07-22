@@ -90,7 +90,7 @@
   use the property 'MaxTimeAfterLastOutput'
   - to directly redirect outputs to a memo or a richedit, ...
   use the property 'OutputLines'
-  (DosCommand1.OutputLnes := Memo1.Lines;)
+  (DosCommand1.OutputLines := Memo1.Lines;)
   - you can access all the outputs of the last command with the property 'Lines'
   - you can change the priority of the process with the property 'Priority'
   value of Priority must be in [HIGH_PRIORITY_CLASS, IDLE_PRIORITY_CLASS,
@@ -594,6 +594,8 @@ begin
   Queue(procedure
   begin
     FLines.Add(AStr);
+	if Assigned(FOutputLines) then
+      FOutputLines.Add(AStr);
   end);
 end;
 
@@ -623,7 +625,6 @@ procedure TDosThread.DoReadLine(AReadString: TSyncString; var AStr, ALast: strin
 var
   sReads: string;
   iCount, iLength: Integer;
-  sBuffer: string;
 begin
   // check to see if there is any data to read from stdout
   sReads := AReadString.Value;
@@ -651,26 +652,6 @@ begin
               Continue;
             FTimer.NewOutput; // a New ouput has been caught
             DoLinesAdd(AStr); // add the line
-            if Assigned(FOutputLines) then
-            begin
-              if ALineBeginned then
-              begin
-                sBuffer := AStr;
-                Queue(procedure
-                begin
-                  FOutputLines[FOutputLines.Count - 1] := sBuffer;
-                end);
-                ALineBeginned := False;
-              end
-              else
-              begin
-                sBuffer := AStr;
-                Queue(procedure
-                begin
-                  FOutputLines.Add(sBuffer);
-                end);
-              end;
-            end;
             DoNewLine(AStr, otEntireLine);
             AStr := '';
           end;
@@ -683,25 +664,6 @@ begin
     ALast := AStr; // no CRLF found in the rest, maybe in the next output
     if (ALast <> '') then
     begin
-      if Assigned(FOutputLines) then
-      begin
-        if ALineBeginned then
-        begin
-          sBuffer := ALast;
-          Queue(procedure
-          begin
-            FOutputLines[FOutputLines.Count - 1] := sBuffer;
-          end);
-        end
-        else
-        begin
-          sBuffer := ALast;
-          Queue(procedure
-          begin
-            FOutputLines.Add(sBuffer);
-          end);
-        end;
-      end;
       DoNewLine(AStr, otBeginningOfLine);
       ALineBeginned := True;
     end;
@@ -1004,19 +966,6 @@ begin // Execute
         if (last <> '') then
         begin // If not empty flush last output
           DoLinesAdd(last);
-          if Assigned(FOutputLines) then
-          begin
-            if LineBeginned then
-              Queue(procedure
-              begin
-                FOutputLines[FOutputLines.Count - 1] := last;
-              end)
-            else
-              Queue(procedure
-              begin
-                FOutputLines.Add(last);
-              end);
-          end;
           DoNewLine(last, otEntireLine);
         end;
       finally
