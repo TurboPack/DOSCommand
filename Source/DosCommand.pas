@@ -90,7 +90,7 @@
   use the property 'MaxTimeAfterLastOutput'
   - to directly redirect outputs to a memo or a richedit, ...
   use the property 'OutputLines'
-  (DosCommand1.OutputLnes := Memo1.Lines;)
+  (DosCommand1.OutputLines := Memo1.Lines;)
   - you can access all the outputs of the last command with the property 'Lines'
   - you can change the priority of the process with the property 'Priority'
   value of Priority must be in [HIGH_PRIORITY_CLASS, IDLE_PRIORITY_CLASS,
@@ -594,6 +594,8 @@ begin
   Queue(procedure
   begin
     FLines.Add(AStr);
+	if Assigned(FOutputLines) then
+      FOutputLines.Add(AStr);
   end);
 end;
 
@@ -623,7 +625,6 @@ procedure TDosThread.DoReadLine(AReadString: TSyncString; var AStr, ALast: strin
 var
   sReads: string;
   iCount, iLength: Integer;
-  sBuffer: string;
 begin
   // check to see if there is any data to read from stdout
   sReads := AReadString.Value;
@@ -651,26 +652,6 @@ begin
               Continue;
             FTimer.NewOutput; // a New ouput has been caught
             DoLinesAdd(AStr); // add the line
-            if Assigned(FOutputLines) then
-            begin
-              if ALineBeginned then
-              begin
-                sBuffer := AStr;
-                Queue(procedure
-                begin
-                  FOutputLines[FOutputLines.Count - 1] := sBuffer;
-                end);
-                ALineBeginned := False;
-              end
-              else
-              begin
-                sBuffer := AStr;
-                Queue(procedure
-                begin
-                  FOutputLines.Add(sBuffer);
-                end);
-              end;
-            end;
             DoNewLine(AStr, otEntireLine);
             AStr := '';
           end;
@@ -683,25 +664,6 @@ begin
     ALast := AStr; // no CRLF found in the rest, maybe in the next output
     if (ALast <> '') then
     begin
-      if Assigned(FOutputLines) then
-      begin
-        if ALineBeginned then
-        begin
-          sBuffer := ALast;
-          Queue(procedure
-          begin
-            FOutputLines[FOutputLines.Count - 1] := sBuffer;
-          end);
-        end
-        else
-        begin
-          sBuffer := ALast;
-          Queue(procedure
-          begin
-            FOutputLines.Add(sBuffer);
-          end);
-        end;
-      end;
       DoNewLine(AStr, otBeginningOfLine);
       ALineBeginned := True;
     end;
@@ -792,10 +754,11 @@ var
   envText: string;
   ReadPipeThread: TReadPipe;
   lpEnvironment: Pointer;
-  WaitHandles: array [1 .. 5] of THandle;
+  WaitHandles: array [0 .. 4] of THandle;
   iCount: Integer;
   pc, pc2: PChar;
 begin // Execute
+  NameThreadForDebugging('TDosThread');
   try
     sa := nil;
     sd := nil;
@@ -944,15 +907,15 @@ begin // Execute
         repeat // main program loop
 
           // thread is waiting to one of
-          WaitHandles[1] := ReadPipeThread.Event.Handle;
+          WaitHandles[0] := ReadPipeThread.Event.Handle;
           // New output from childprocess
-          WaitHandles[2] := FInputLines.Event.Handle;
+          WaitHandles[1] := FInputLines.Event.Handle;
           // user has New line (TDosCommand.Sendline) to deliver
-          WaitHandles[3] := FProcessInformation.hProcess;
+          WaitHandles[2] := FProcessInformation.hProcess;
           // Process-Ending (child)
-          WaitHandles[4] := FTerminateEvent.Handle;
+          WaitHandles[3] := FTerminateEvent.Handle;
           // Termination of this thread (from mainthread)
-          WaitHandles[5] := FTimer.Event.Handle; // timer elapsed (each second)
+          WaitHandles[4] := FTimer.Event.Handle; // timer elapsed (each second)
 
           case WaitforMultipleObjects(Length(WaitHandles), @WaitHandles, False,
             infinite) of
@@ -973,8 +936,7 @@ begin // Execute
             Wait_Object_0 + 0:
               begin // ReadEvent
                 while ReadPipeThread.ReadString.Length > 0 do
-                  DoReadLine(ReadPipeThread.ReadString, Str, last,
-                    LineBeginned);
+                  DoReadLine(ReadPipeThread.ReadString, Str, last, LineBeginned);
               end;
 
           end;
@@ -1004,28 +966,15 @@ begin // Execute
         if (last <> '') then
         begin // If not empty flush last output
           DoLinesAdd(last);
-          if Assigned(FOutputLines) then
-          begin
-            if LineBeginned then
-              Queue(procedure
-              begin
-                FOutputLines[FOutputLines.Count - 1] := last;
-              end)
-            else
-              Queue(procedure
-              begin
-                FOutputLines.Add(last);
-              end);
-          end;
           DoNewLine(last, otEntireLine);
         end;
       finally
-        ReadPipeThread.Terminate;
-        ReadPipeThread.WaitFor;
-        ReadPipeThread.Free;
         if FCanTerminate then
           Waitforsingleobject(FProcessInformation.hProcess, 1000);
         GetExitCodeProcess(FProcessInformation.hProcess, FExitCode);
+        ReadPipeThread.Terminate;
+        ReadPipeThread.WaitFor;
+        FreeAndNil(ReadPipeThread);
       end;
     finally
       FreeMem(sd);
@@ -1036,8 +985,12 @@ begin // Execute
       CloseHandle(myoutputwrite);
     end;
   except
-    DoEndStatus(esError);
-    raise;
+    on e: Exception do
+    begin
+      OutputDebugString(PChar('EXCEPTION: TDosThread ' + e.Message));
+      DoEndStatus(esError);
+      raise;
+    end;
   end;
 end;
 
@@ -1378,23 +1331,32 @@ var
   Buf: TStream;
   bread: Cardinal;
 begin
-  repeat
-    FillChar(rBuf, Length(rBuf), 0);
-    if not ReadFile(Fread_stdout, rBuf[0], Length(rBuf), bread, nil) then
-    // wait for input
-      Assert(getlasterror = Error_broken_pipe);
-    if Terminated then
-      Exit;
+  try
+    NameThreadForDebugging('TReadPipe');
     Buf := TMemoryStream.Create;
     try
-      Buf.Write(rBuf[0], bread);
-      Buf.Seek(0, soFromBeginning);
-      FSyncString.Add(FOnCharDecoding(Self, Buf));
+      repeat
+        FillChar(rBuf, Length(rBuf), 0);
+        if not ReadFile(Fread_stdout, rBuf[0], Length(rBuf), bread, nil) then
+        // wait for input
+          Assert(GetLastError = Error_broken_pipe);
+        if Terminated then
+          Break;
+        Buf.Size := 0;
+        Buf.Write(rBuf[0], bread);
+        Buf.Seek(0, soFromBeginning);
+        FSyncString.Add(FOnCharDecoding(Self, Buf));
+        FEvent.SetEvent;
+      until Terminated;
     finally
-      Buf.Free;
+      FreeAndNil(Buf);
     end;
-    FEvent.SetEvent;
-  until Terminated;
+  except
+    on e: Exception do
+    begin
+      OutputDebugString(PChar('EXCEPTION: TReadPipe Execute ' + e.Message));
+    end;
+  end;
 end;
 
 procedure TReadPipe.Terminate;
