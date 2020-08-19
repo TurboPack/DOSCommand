@@ -9,14 +9,14 @@
   *********************************************************************
   ** maxime_collomb@yahoo.fr                                         **
   **                                                                 **
-  **   for this component, iCount just translated C code                  **
+  **   for this component, iCount just translated C code             **
   ** from Community.borland.com                                      **
   ** (http://www.vmlinux.org/jakov/community.borland.com/10387.html) **
   **                                                                 **
   **   if you have a good idea of improvement, please                **
   ** let me know (maxime_collomb@yahoo.fr).                          **
   **   if you improve this component, please send me a Copy          **
-  ** so iCount can put it on www.torry.net.                               **
+  ** so iCount can put it on www.torry.net.                          **
   *********************************************************************
 
   History :
@@ -974,7 +974,7 @@ begin // Execute
         GetExitCodeProcess(FProcessInformation.hProcess, FExitCode);
         ReadPipeThread.Terminate;
         ReadPipeThread.WaitFor;
-        FreeAndNil(ReadPipeThread);
+        ReadPipeThread.Free;
       end;
     finally
       FreeMem(sd);
@@ -985,9 +985,9 @@ begin // Execute
       CloseHandle(myoutputwrite);
     end;
   except
-    on e: Exception do
+    on E: Exception do
     begin
-      OutputDebugString(PChar('EXCEPTION: TDosThread ' + e.Message));
+      OutputDebugString(PChar('EXCEPTION: TDosThread ' + E.Message));
       DoEndStatus(esError);
       raise;
     end;
@@ -1173,7 +1173,8 @@ destructor TInputLines.Destroy;
 begin
   LockList;
   try
-    FreeAndNil(FList);
+    FList.Free;
+    FList := nil;
   finally
     UnlockList;
     FEvent.Free;
@@ -1187,7 +1188,7 @@ var
 begin
   pList := LockList;
   try
-    Result := plist.Add(AValue);
+    Result := pList.Add(AValue);
   finally
     UnlockList;
   end;
@@ -1327,35 +1328,33 @@ end;
 
 procedure TReadPipe.Execute;
 var
-  rBuf: array [0 .. 1023] of Byte;
-  Buf: TStream;
-  bread: Cardinal;
+  lBuf: array [0 .. 1023] of Byte;
+  lStream: TStream;
+  lBread: Cardinal;
 begin
   try
     NameThreadForDebugging('TReadPipe');
-    Buf := TMemoryStream.Create;
+    lStream := TMemoryStream.Create;
     try
       repeat
-        FillChar(rBuf, Length(rBuf), 0);
-        if not ReadFile(Fread_stdout, rBuf[0], Length(rBuf), bread, nil) then
+        FillChar(lBuf, Length(lBuf), 0);
+        if not ReadFile(Fread_stdout, lBuf[0], Length(lBuf), lBread, nil) then
         // wait for input
           Assert(GetLastError = Error_broken_pipe);
         if Terminated then
           Break;
-        Buf.Size := 0;
-        Buf.Write(rBuf[0], bread);
-        Buf.Seek(0, soFromBeginning);
-        FSyncString.Add(FOnCharDecoding(Self, Buf));
+        lStream.Size := 0;
+        lStream.Write(lBuf[0], lBread);
+        lStream.Seek(0, soFromBeginning);
+        FSyncString.Add(FOnCharDecoding(Self, lStream));
         FEvent.SetEvent;
       until Terminated;
     finally
-      FreeAndNil(Buf);
+      lStream.Free;
     end;
   except
-    on e: Exception do
-    begin
-      OutputDebugString(PChar('EXCEPTION: TReadPipe Execute ' + e.Message));
-    end;
+    on E: Exception do
+      OutputDebugString(PChar('EXCEPTION: TReadPipe Execute ' + E.Message));
   end;
 end;
 
