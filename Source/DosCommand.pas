@@ -972,8 +972,6 @@ begin // Execute
         if FCanTerminate then
           Waitforsingleobject(FProcessInformation.hProcess, 1000);
         GetExitCodeProcess(FProcessInformation.hProcess, FExitCode);
-        CloseHandle(myoutputwrite);
-        myoutputwrite := 0;
         ReadPipeThread.Terminate;
         ReadPipeThread.WaitFor;
         ReadPipeThread.Free;
