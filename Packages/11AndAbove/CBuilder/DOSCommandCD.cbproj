@@ -8,7 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <ProjectGuid>{3BF32379-3499-4795-A26A-0C22DE5AF3A5}</ProjectGuid>
         <ProjectName Condition="'$(ProjectName)'==''">DOSCommandCD</ProjectName>
-        <ProjectVersion>20.1</ProjectVersion>
+        <ProjectVersion>20.2</ProjectVersion>
         <TargetedPlatforms>1</TargetedPlatforms>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -59,9 +59,9 @@
         <ILINK_Description>TurboPack DOSCommand Designtime Package for CBuilder</ILINK_Description>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
         <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-        <ILINK_LibraryPath>..\..\Sydney\CBuilder\;..\..\..\Source\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <ILINK_LibraryPath>..\..\..\Source\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <ILINK_TranslatedLibraryPath>$(BDSLIB)\$(PLATFORM)\release\$(LANGDIR);$(ILINK_TranslatedLibraryPath)</ILINK_TranslatedLibraryPath>
-        <IncludePath>..\..\Sydney\CBuilder\;..\..\..\Source\;$(IncludePath)</IncludePath>
+        <IncludePath>..\..\..\Source\;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>.\$(Platform)\$(Config)</IntermediateOutputDir>
         <Multithreaded>true</Multithreaded>
         <ProjectType>CppPackage</ProjectType>
@@ -155,8 +155,16 @@
                 </ProjectProperties>
             </CPlusPlusBuilder.Personality>
             <Platforms>
+                <Platform value="Android">False</Platform>
+                <Platform value="Android64">False</Platform>
+                <Platform value="Linux64">False</Platform>
+                <Platform value="OSX64">False</Platform>
+                <Platform value="OSXARM64">False</Platform>
                 <Platform value="Win32">True</Platform>
                 <Platform value="Win64">False</Platform>
+                <Platform value="Win64x">False</Platform>
+                <Platform value="iOSDevice64">False</Platform>
+                <Platform value="iOSSimARM64">False</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
