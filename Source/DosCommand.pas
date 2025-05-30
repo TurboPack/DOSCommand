@@ -1360,12 +1360,14 @@ end;
 
 procedure TReadPipe.Terminate;
 const
-  fin = 'fin';
+  fin: AnsiString = #0;
 var
   bwrite: Cardinal;
 begin
   inherited Terminate;
-  Assert(WriteFile(Fwrite_stdout, fin, Length(fin), bwrite, nil));
+  // write dummy string to stdout to trigger ReadFile.
+  if not WriteFile(Fwrite_stdout, Pointer(fin)^, Length(fin), bwrite, nil) then
+    RaiseLastOSError;
 end;
 
 end.
