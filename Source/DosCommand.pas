@@ -687,7 +687,7 @@ begin
     pBuf := TMemoryStream.Create;
     try
       FOnCharEncoding(Self, sSends, pBuf);
-      Assert(WriteFile(AWritePipe, pBuf.memory^, pBuf.Size, bWrite, nil));
+      WriteFile(AWritePipe, pBuf.Memory^, pBuf.Size, bWrite, nil);
       // send it to stdin
     finally
       pBuf.Free;
