@@ -1,0 +1,57 @@
+# DPM package spec file
+metadata:
+  id: TurboPack.DOSCommand
+  version: 2.3.0
+  description: 'Execute a dos program (exe, com, or batch file) and catch the ouput'
+  icon: DOSCommand.png
+  authors:
+    - Various
+  projectUrl: https://github.com/TurboPack/DOSCommand
+  repositoryUrl: https://github.com/TurboPack/DOSCommand
+  license: MPL-1.1
+  readme: README.md
+targetPlatforms:
+  - compiler from: delphi10.1
+    compiler to: delphi10.4
+    platforms:
+      - win32
+      - win64
+    template: named
+  - compiler from: delphi11.0
+    compiler to: delphi13.0
+    platforms:
+      - win32
+      - win64
+templates:
+  - name: default
+    source:
+      - src: ./source/*.pas
+      - src: ./packages/11AndAbove/Delphi/*.dpk
+      - src: ./packages/11AndAbove/Delphi/*.dproj
+    build:
+      - project: ./packages/11AndAbove/Delphi/DOSCommandDR.dproj
+        platforms:
+          - win32
+          - win64
+        defines: RELEASE
+    design:
+      - project: ./packages/11AndAbove/Delphi/DOSCommandDD.dproj
+        platforms:
+          - win32
+        defines: RELEASE
+  - name: named
+    source:
+      - src: ./source/*.pas
+      - src: ./packages/$compilercodename$/Delphi/*.dpk
+      - src: ./packages/$compilercodename$/Delphi/*.dproj
+    build:
+      - project: ./packages/$compilercodename$/Delphi/DOSCommandDR.dproj
+        platforms:
+          - win32
+          - win64
+        defines: RELEASE
+    design:
+      - project: ./packages/$compilercodename$/Delphi/DOSCommandDD.dproj
+        platforms:
+          - win32
+        defines: RELEASE
